@@ -1,4 +1,3 @@
-
 export type UniqueID = string;
 
 export enum Page {
@@ -94,7 +93,16 @@ export interface KnowledgeBase {
 export enum GeminiModel {
   Flash = 'gemini-2.5-flash',
   Pro = 'gemini-2.5-pro',
-  FlashLite = 'gemini-flash-lite-latest'
+  FlashLite = 'gemini-flash-lite-latest',
+  FlashWithSearch = 'gemini-2.5-flash-with-search', // Custom identifier
+  LiveAudio = 'gemini-2.5-flash-native-audio-preview-09-2025'
+}
+
+export interface GroundingSource {
+  web?: {
+    uri: string;
+    title: string;
+  };
 }
 
 export interface ChatMessage {
@@ -102,6 +110,7 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
   timestamp: string; // ISO date string
+  sources?: GroundingSource[];
 }
 
 export interface DraggableItem {
