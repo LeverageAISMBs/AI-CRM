@@ -1,0 +1,5 @@
+{
+  "name": "Intelligent CRM",
+  "description": "An AI-native CRM application designed to streamline sales workflows with intelligent features, including a Kanban-style deal pipeline, a versatile AI assistant powered by Gemini, and comprehensive contact management.",
+  "requestFramePermissions": []
+}
