@@ -6,6 +6,8 @@ import Sidebar from './components/Sidebar';
 import AIAssistant from './components/AIAssistant';
 import KanbanBoard from './components/KanbanBoard';
 import SalesTrainerPage from './components/SalesTrainerPage';
+import DealFormModal from './components/DealFormModal';
+import ConfirmationModal from './components/ConfirmationModal';
 import { IconMenu, IconX, IconBot } from './components/Icons';
 
 const App: React.FC = () => {
@@ -15,6 +17,67 @@ const App: React.FC = () => {
   const [deals, setDeals] = useState<Deal[]>(mockDeals);
   
   const [draggedItem, setDraggedItem] = useState<DraggableItem | null>(null);
+
+  // State for DealFormModal
+  const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+  const [dealToEdit, setDealToEdit] = useState<Deal | null>(null);
+  const [newDealStage, setNewDealStage] = useState<DealStage | undefined>(undefined);
+  
+  // State for ConfirmationModal
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [dealToDelete, setDealToDelete] = useState<string | null>(null);
+
+  const handleOpenCreateModal = (stage: DealStage) => {
+    setDealToEdit(null);
+    setNewDealStage(stage);
+    setIsDealModalOpen(true);
+  };
+
+  const handleOpenEditModal = (deal: Deal) => {
+    setDealToEdit(deal);
+    setNewDealStage(undefined);
+    setIsDealModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsDealModalOpen(false);
+    setDealToEdit(null);
+    setNewDealStage(undefined);
+  };
+
+  const handleSaveDeal = (dealData: Deal) => {
+    const exists = deals.some(d => d.id === dealData.id);
+    if (exists) {
+      // Update
+      setDeals(deals.map(d => d.id === dealData.id ? dealData : d));
+    } else {
+      // Create
+      setDeals([...deals, dealData]);
+    }
+    handleCloseModal();
+  };
+
+  // Opens the confirmation modal
+  const handleDeleteDeal = (dealId: string) => {
+    setDealToDelete(dealId);
+    setIsConfirmModalOpen(true);
+  };
+  
+  // Actually deletes the deal after confirmation
+  const handleConfirmDelete = () => {
+    if (dealToDelete) {
+      setDeals(deals.filter(d => d.id !== dealToDelete));
+    }
+    setIsConfirmModalOpen(false);
+    setDealToDelete(null);
+  };
+  
+  // Closes the confirmation modal without deleting
+  const handleCancelDelete = () => {
+    setIsConfirmModalOpen(false);
+    setDealToDelete(null);
+  };
+
 
   const handleDrop = useCallback((toStage: DealStage) => {
     if (!draggedItem) return;
@@ -34,7 +97,16 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (activePage) {
       case Page.Deals:
-        return <KanbanBoard deals={deals} onDrop={handleDrop} onDragStart={handleDragStart} />;
+        return (
+          <KanbanBoard 
+            deals={deals} 
+            onDrop={handleDrop} 
+            onDragStart={handleDragStart}
+            onAddDeal={handleOpenCreateModal}
+            onEditDeal={handleOpenEditModal}
+            onDeleteDeal={handleDeleteDeal}
+          />
+        );
       case Page.Trainer:
         return <SalesTrainerPage />;
       case Page.Contacts:
@@ -73,6 +145,22 @@ const App: React.FC = () => {
       </div>
 
       <AIAssistant isOpen={isAssistantOpen} setIsOpen={setIsAssistantOpen} />
+      
+      <DealFormModal 
+        isOpen={isDealModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSaveDeal}
+        dealToEdit={dealToEdit}
+        initialStage={newDealStage}
+      />
+      
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Delete Deal"
+        message="Are you sure? This will permanently remove the deal."
+      />
     </div>
   );
 };

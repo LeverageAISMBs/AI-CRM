@@ -5,6 +5,8 @@ import { generateChatResponse, connectLiveSession } from '../services/geminiServ
 import { createPcmBlob, decode, decodeAudioData } from '../utils/audioUtils';
 import { LiveServerMessage, Modality } from '@google/genai';
 
+// For cross-browser compatibility
+const CrossBrowserAudioContext = window.AudioContext || (window as any).webkitAudioContext;
 
 interface AIAssistantProps {
   isOpen: boolean;
@@ -114,13 +116,17 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, setIsOpen }) => {
 
   const startLiveSession = useCallback(async () => {
     setIsConnecting(true);
+
+    if (!CrossBrowserAudioContext) {
+        stopLiveSession("Your browser does not support the Web Audio API.");
+        return;
+    }
+
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         
-        // FIX: Add `(window as any)` to support vendor-prefixed `webkitAudioContext`.
-        const inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-        // FIX: Add `(window as any)` to support vendor-prefixed `webkitAudioContext`.
-        const outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        const inputAudioContext = new CrossBrowserAudioContext({ sampleRate: 16000 });
+        const outputAudioContext = new CrossBrowserAudioContext({ sampleRate: 24000 });
         const sources = new Set<AudioBufferSourceNode>();
 
         audioInfrastructureRef.current = {
@@ -249,7 +255,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, setIsOpen }) => {
                 <p className="font-semibold mb-1">Sources:</p>
                 <ul className="space-y-1">
                   {msg.sources.map((source, index) => (
-                    source.web && (
+                    // FIX: Check for source.web.uri before rendering the link to avoid an undefined href.
+                    source.web && source.web.uri && (
                       <li key={index} className="flex items-start">
                         <IconLink className="w-3 h-3 mr-2 mt-1 flex-shrink-0" />
                         <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 break-all">

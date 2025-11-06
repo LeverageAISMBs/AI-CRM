@@ -101,8 +101,9 @@ export enum GeminiModel {
 
 export interface GroundingSource {
   web?: {
-    uri: string;
-    title: string;
+    // FIX: Made uri and title optional to match the Gemini API response type for grounding chunks.
+    uri?: string;
+    title?: string;
   };
 }
 
