@@ -5,6 +5,7 @@ import { mockDeals } from './constants';
 import Sidebar from './components/Sidebar';
 import AIAssistant from './components/AIAssistant';
 import KanbanBoard from './components/KanbanBoard';
+import SalesTrainerPage from './components/SalesTrainerPage';
 import { IconMenu, IconX, IconBot } from './components/Icons';
 
 const App: React.FC = () => {
@@ -34,6 +35,8 @@ const App: React.FC = () => {
     switch (activePage) {
       case Page.Deals:
         return <KanbanBoard deals={deals} onDrop={handleDrop} onDragStart={handleDragStart} />;
+      case Page.Trainer:
+        return <SalesTrainerPage />;
       case Page.Contacts:
         return <div className="p-8 text-center"><h1 className="text-3xl font-bold">Contacts Page</h1><p className="mt-2 text-gray-400">Manage your contacts and prospects here.</p></div>;
       case Page.Calendar:

@@ -71,6 +71,7 @@ export interface CalendarEvent {
 export interface AIPersona {
   id: UniqueID;
   name: string;
+  description: string;
   style: string;
   knowledgeBaseUrl?: string;
   systemPrompt: string;

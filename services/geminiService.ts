@@ -1,4 +1,4 @@
-import { GoogleGenAI, LiveServerMessage, Modality } from "@google/genai";
+import { GoogleGenAI, LiveServerMessage, Modality, Chat } from "@google/genai";
 import { GeminiModel, ChatMessage } from '../types';
 
 const API_KEY = process.env.API_KEY;
@@ -37,6 +37,19 @@ export const generateChatResponse = async (
     }
     return { text: "An unknown error occurred while contacting the AI service." };
   }
+};
+
+export const createChatSession = (systemInstruction: string): Chat | null => {
+    if (!ai) {
+        console.warn("AI service not configured. Cannot create chat session.");
+        return null;
+    }
+    return ai.chats.create({
+        model: GeminiModel.Pro, // Pro is better for nuanced role-playing
+        config: {
+            systemInstruction: systemInstruction,
+        },
+    });
 };
 
 interface LiveSessionCallbacks {
