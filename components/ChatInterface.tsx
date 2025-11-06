@@ -1,15 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AIPersona, ChatMessage } from '../types';
-import { IconSend, IconSparkles } from './Icons';
+import { AIPersona, ChatMessage, GeminiModel } from '../types';
+import { IconSend, IconSparkles, IconMicrophone, IconStop } from './Icons';
 
 interface ChatInterfaceProps {
   activePersona: AIPersona | null;
   messages: ChatMessage[];
   isLoading: boolean;
   onSendMessage: (input: string) => void;
+  selectedModel: GeminiModel;
+  onModelChange: (model: GeminiModel) => void;
+  isLiveSession: boolean;
+  isConnecting: boolean;
+  onMicClick: () => void;
+  liveTranscript: { user: string; model: string };
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePersona, messages, isLoading, onSendMessage }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  activePersona,
+  messages,
+  isLoading,
+  onSendMessage,
+  selectedModel,
+  onModelChange,
+  isLiveSession,
+  isConnecting,
+  onMicClick,
+  liveTranscript,
+}) => {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -17,7 +34,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePersona, messages, 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(scrollToBottom, [messages]);
+  useEffect(scrollToBottom, [messages, liveTranscript]);
   
   const handleSend = () => {
     if (input.trim()) {
@@ -62,32 +79,69 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ activePersona, messages, 
              </div>
            </div>
         )}
+
+        {isLiveSession && (
+          <div className="p-3 bg-gray-700/50 rounded-lg text-sm">
+              <p className="font-semibold text-gray-300">Live Transcript:</p>
+              {liveTranscript.user && <p><span className="font-bold text-indigo-400">You:</span> {liveTranscript.user}</p>}
+              {liveTranscript.model && <p><span className="font-bold text-teal-400">AI:</span> {liveTranscript.model}</p>}
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
       <footer className="p-4 border-t border-gray-700/50 bg-gray-900/50">
-         <div className="relative flex items-center">
-          <textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyPress={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                }
-            }}
-            placeholder={`Practice with ${activePersona.name}...`}
-            className="w-full p-3 pr-12 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-            rows={1}
-            disabled={isLoading}
-          />
-          <button
-            onClick={handleSend}
-            disabled={isLoading || !input.trim()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-gray-400 hover:text-white hover:bg-indigo-600 disabled:hover:bg-transparent disabled:text-gray-500 transition-colors"
-          >
-            <IconSend />
-          </button>
+         <div className="mb-2">
+            <select
+                value={selectedModel}
+                onChange={e => onModelChange(e.target.value as GeminiModel)}
+                className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                disabled={isLiveSession || isConnecting || isLoading}
+            >
+                <option value={GeminiModel.Pro}>Gemini 2.5 Pro (Advanced Role-play)</option>
+                <option value={GeminiModel.Flash}>Gemini 2.5 Flash (Fast Role-play)</option>
+                <option value={GeminiModel.LiveAudio}>Gemini 2.5 Flash Audio (Voice Conversation)</option>
+            </select>
+        </div>
+        <div className="flex items-start space-x-2">
+            <div className="relative flex-1">
+                <textarea
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyPress={e => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend();
+                        }
+                    }}
+                    placeholder={isLiveSession ? "Live session active..." : `Practice with ${activePersona.name}...`}
+                    className="w-full p-3 pr-12 bg-gray-700 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                    rows={1}
+                    disabled={isLoading || isLiveSession || isConnecting}
+                />
+                <button
+                    onClick={handleSend}
+                    disabled={isLoading || !input.trim() || isLiveSession || isConnecting}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-gray-400 hover:text-white hover:bg-indigo-600 disabled:hover:bg-transparent disabled:text-gray-500 transition-colors"
+                >
+                    <IconSend />
+                </button>
+            </div>
+            <button
+                onClick={onMicClick}
+                disabled={isLoading || selectedModel !== GeminiModel.LiveAudio}
+                className={`p-3 rounded-full transition-colors ${
+                isLiveSession
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : isConnecting
+                    ? 'bg-yellow-500 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-indigo-600 hover:text-white'
+                } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-700`}
+                aria-label={isLiveSession ? 'Stop voice session' : 'Start voice session'}
+            >
+                {isLiveSession || isConnecting ? <IconStop /> : <IconMicrophone />}
+            </button>
         </div>
       </footer>
     </div>

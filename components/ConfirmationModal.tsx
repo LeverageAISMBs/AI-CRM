@@ -22,13 +22,13 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
               onClick={onClose}
               className="px-6 py-2 rounded-md font-semibold text-white bg-gray-600 hover:bg-gray-500 transition-colors"
             >
-              No
+              Cancel
             </button>
             <button
               onClick={onConfirm}
               className="px-6 py-2 rounded-md font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
             >
-              Yes
+              Confirm
             </button>
           </div>
         </div>

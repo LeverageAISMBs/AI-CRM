@@ -1,5 +1,5 @@
 import { GoogleGenAI, LiveServerMessage, Modality, Chat } from "@google/genai";
-import { GeminiModel, ChatMessage } from '../types';
+import { GeminiModel, ChatMessage, MapResult } from '../types';
 
 const API_KEY = process.env.API_KEY;
 
@@ -39,13 +39,64 @@ export const generateChatResponse = async (
   }
 };
 
-export const createChatSession = (systemInstruction: string): Chat | null => {
+
+export const generateGroundedResponse = async (
+  prompt: string,
+  location: { latitude: number; longitude: number; }
+): Promise<{ textResponse: string; mapResults: MapResult[] }> => {
+  if (!ai) {
+    throw new Error("AI service is not configured.");
+  }
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        tools: [{ googleSearch: {} }, { googleMaps: {} }],
+        toolConfig: {
+          retrievalConfig: {
+            latLng: location,
+          },
+        },
+      },
+    });
+
+    const textResponse = response.text;
+    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    
+    const mapResults: MapResult[] = [];
+    chunks.forEach((chunk, index) => {
+      if (chunk.maps && chunk.maps.uri && chunk.maps.title) {
+        mapResults.push({
+          id: `map-result-${index}-${Date.now()}`,
+          title: chunk.maps.title,
+          uri: chunk.maps.uri,
+        });
+      }
+    });
+
+    return { textResponse, mapResults };
+  } catch (error) {
+    console.error("Error generating grounded response from Gemini:", error);
+    if (error instanceof Error) {
+        throw new Error(`Gemini API Error: ${error.message}`);
+    }
+    throw new Error("An unknown error occurred while contacting the AI service.");
+  }
+};
+
+
+export const createChatSession = (systemInstruction: string, model: GeminiModel = GeminiModel.Pro): Chat | null => {
     if (!ai) {
         console.warn("AI service not configured. Cannot create chat session.");
         return null;
     }
+    // Don't use the audio model for a text chat. Default to Pro.
+    const chatModel = model === GeminiModel.LiveAudio ? GeminiModel.Pro : model;
+
     return ai.chats.create({
-        model: GeminiModel.Pro, // Pro is better for nuanced role-playing
+        model: chatModel,
         config: {
             systemInstruction: systemInstruction,
         },
@@ -59,7 +110,9 @@ interface LiveSessionCallbacks {
     onclose: (e: CloseEvent) => void;
 }
 
-export const connectLiveSession = (callbacks: LiveSessionCallbacks) => {
+const DEFAULT_LIVE_SYSTEM_PROMPT = 'You are a helpful and friendly AI assistant.';
+
+export const connectLiveSession = (callbacks: LiveSessionCallbacks, systemInstruction: string = DEFAULT_LIVE_SYSTEM_PROMPT) => {
     if (!ai) {
         throw new Error("AI service is not configured. Please set the API_KEY.");
     }
@@ -72,7 +125,7 @@ export const connectLiveSession = (callbacks: LiveSessionCallbacks) => {
             speechConfig: {
                 voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
             },
-            systemInstruction: 'You are a helpful and friendly sales training assistant. Guide the user through sales scenarios.',
+            systemInstruction: systemInstruction,
             inputAudioTranscription: {},
             outputAudioTranscription: {},
         },

@@ -38,6 +38,24 @@ export interface Contact {
   lastContacted: string; // ISO date string
 }
 
+// A more flexible type for the main contacts page to allow custom fields
+export type ContactRecord = {
+  id: UniqueID;
+  [key: string]: any; // Allows for dynamic properties
+};
+
+export enum ViewMode {
+  Table = 'table',
+  Grid = 'grid',
+  List = 'list',
+}
+
+export interface Column {
+  key: string;
+  label: string;
+}
+
+
 export interface Deal {
   id: UniqueID;
   title: string;
@@ -101,11 +119,21 @@ export enum GeminiModel {
 
 export interface GroundingSource {
   web?: {
-    // FIX: Made uri and title optional to match the Gemini API response type for grounding chunks.
+    uri?: string;
+    title?: string;
+  };
+  maps?: {
     uri?: string;
     title?: string;
   };
 }
+
+export interface MapResult {
+  id: UniqueID;
+  title: string;
+  uri: string;
+}
+
 
 export interface ChatMessage {
   id: UniqueID;
